@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Todolist</string>
+    <string name="main_activity_name">My Todolist</string>
+    <string name="edit_activity">Task Editor</string>
+    <string name="selected_task_activity">Choose modified task</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_delete">Delete</string>
+
+    <string name="default_task">Please keyin your task</string>
+    <string name="default_date">yyyy/mm/dd</string>
+    <string name="default_completed">false</string>
+    <string-array name="progressList">
+        <item>false</item>>
+        <item>true</item>
+    </string-array>
+</resources>
