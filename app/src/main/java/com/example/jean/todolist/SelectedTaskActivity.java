@@ -51,14 +51,10 @@ public class SelectedTaskActivity extends AppCompatActivity {
             listClickListener = new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    Intent innerIntent = new Intent(SelectedTaskActivity.this,SelectedTaskActivity.class);
-                    innerIntent.setAction("edit_done_notification");
-                    PendingIntent pendingIntent = PendingIntent.getActivity(SelectedTaskActivity.this, 1, innerIntent, 0);
                     Intent intent = new Intent(SelectedTaskActivity.this, EditTaskActivity.class);
                     intent.setAction(AppContent.action_function_edit);
                     intent.putExtra(AppContent.edit_task_index, position);
                     intent.putExtra(AppContent.edit_task, (ToDoTask) adapter.getItem(position));
-                    intent.putExtra("pending_intent",pendingIntent);
                     startActivityForResult(intent,0);
                 }
             };

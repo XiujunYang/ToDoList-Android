@@ -38,7 +38,7 @@ public class EditTaskActivity extends AppCompatActivity {
 
     private void init(){
         final Intent intent = getIntent();
-        String action = intent.getAction();
+        final String action = intent.getAction();
         if(null!= action && action.equals(AppContent.action_function_edit)){
             ToDoTask task = intent.getParcelableExtra(AppContent.edit_task);
             if(task != null){
@@ -50,6 +50,7 @@ public class EditTaskActivity extends AppCompatActivity {
                         String.valueOf(task.isCompleted())));
             }
         }
+
         // if only create, show up following is enough.
         Button confirmBtn = (Button) findViewById(R.id.confirmBtn_edit);
         confirmBtn.setOnClickListener(new Button.OnClickListener(){
@@ -58,13 +59,14 @@ public class EditTaskActivity extends AppCompatActivity {
                 newTask = new ToDoTask(datePicker.getYear()+"-"+(datePicker.getMonth()+1)+"-"+datePicker.getDayOfMonth(),
                         taskDesc.getText().toString(),
                         spinner.getSelectedItem().toString().equals("true")? true:false);
-                MainActivity.dbHandler.updateTaskToList(newTask, intent.getIntExtra(AppContent.edit_task_index,-1));
-                Bundle bundle=new Bundle();
-                bundle.putInt(AppContent.edit_task_index, intent.getIntExtra(AppContent.edit_task_index,-1));
+                MainActivity.dbHandler.updateTaskToList(newTask, intent.getIntExtra(AppContent.edit_task_index, -1));
+                // Create's intent didn't exist AppContent.edit_task_index.
+                Bundle bundle = new Bundle();
+                bundle.putInt(AppContent.edit_task_index, intent.getIntExtra(AppContent.edit_task_index, -1));
                 bundle.putParcelable(AppContent.edit_task, newTask);
                 Intent intent = new Intent();
                 intent.putExtras(bundle);
-                setResult(RESULT_OK,intent);
+                setResult(RESULT_OK, intent);
                 finish();
             }});
         Button cancelBtn = (Button) findViewById(R.id.cancelBtn_edit);
