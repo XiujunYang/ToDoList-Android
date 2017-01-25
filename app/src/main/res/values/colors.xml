@@ -5,4 +5,6 @@
     <color name="colorAccent">#FF4081</color>
     <color name="colorBtnTxt">#FF4081</color>
     <color name="colorBtnBgd">#FF4081</color>
+    <color name="red">#fa4d4a</color>
+    <color name="green">#3ac358</color>
 </resources>

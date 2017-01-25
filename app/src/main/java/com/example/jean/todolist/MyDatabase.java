@@ -21,7 +21,7 @@ public class MyDatabase  {
             DatabaseHelper.COLUMN_TASK +" = ? AND " +
             DatabaseHelper.COLUMN_STATUS+" = ?";
 
-    static MyDatabase instance;
+    private static MyDatabase instance;
     private DatabaseHelper dbHelper;
     private SQLiteDatabase db;
     private List<ToDoTask> mTaksList = new ArrayList<ToDoTask>();
@@ -107,6 +107,7 @@ public class MyDatabase  {
                 DatabaseHelper.TABLE_NAME,
                 null,
                 values);
+        Log.i(LOGTAG,"insertDataToDB for "+newTask.toString()+" , result:"+count);
         if(count == -1) return false;
         mTaksList.add(newTask);
         return true;
@@ -117,6 +118,7 @@ public class MyDatabase  {
         String[] selectionArgs = {delTask.getDate(),delTask.getTask(),
                 delTask.isCompleted()==true?"1":"0"};
         int result = db.delete(DatabaseHelper.TABLE_NAME, selection, selectionArgs);
+        Log.i(LOGTAG,"deleteDataFromDB for index("+index+"), result:"+result);
         if(result == 0) return false;
         mTaksList.remove(delTask);
         return true;
@@ -138,7 +140,9 @@ public class MyDatabase  {
                 values,
                 selection,
                 selectionArgs);
+        Log.i(LOGTAG,"updateDataToDB for "+modifiedTask.toString()+" in index("+index+"), result:"+count);
         if(count <= 0) return false;
+        mTaksList.set(index, modifiedTask);
         return true;
     }
 }

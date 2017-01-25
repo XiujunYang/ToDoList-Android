@@ -8,7 +8,7 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/todo_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
@@ -22,10 +22,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".EditTaskActivity"
-            android:label="@string/edit_activity"/>
-        <activity android:name=".SelectedTaskActivity"
-            android:label="@string/selected_task_activity"/>
+        <activity
+            android:name=".EditTaskActivity"
+            android:label="@string/edit_activity" />
+        <activity android:name=".SelectedTaskActivity" />
+        <activity android:name=".SearchActivity"
+            android:label="@string/search_task_label" />
         <!--
  ATTENTION: This was auto-generated to add Google Play services to your project for
      App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -39,7 +41,6 @@
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
-
     </application>
 
 </manifest>
