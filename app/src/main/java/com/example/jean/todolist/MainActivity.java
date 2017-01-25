@@ -108,13 +108,20 @@ public class MainActivity extends AppCompatActivity {
         Log.i(LOG_TAG, "requestCode:"+requestCode);
         int pos = -1;
         Bundle b;
+<<<<<<< HEAD
         switch (requestCode) {
+=======
+        switch (resultCode) {
+>>>>>>> d65de23a1599d870860e983a1fe3c3bd293c8e41
             case AppContent.Request_Code_MainActivity:
                 if(resultCode != RESULT_OK) break;
                 if(data==null || data.getExtras() ==null) break;
                 ToDoTask searchTask= data.getExtras().getParcelable(AppContent.search_task);
                 if(searchTask != null) pos = adapter.taskList.indexOf(searchTask);
+<<<<<<< HEAD
                 Log.i(LOG_TAG,"search position result: "+pos);
+=======
+>>>>>>> d65de23a1599d870860e983a1fe3c3bd293c8e41
                 if(pos==-1) break;
                 listView.smoothScrollToPosition(pos);
                 break;
