@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/content_main"
@@ -15,28 +15,32 @@
             android:layout_height="wrap_content" >
 
             <TextView
-                android:layout_width="80dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Date"
                 android:textAlignment="center"
                 android:textColor="@android:color/black"
-                android:textSize="20dp" />
+                android:layout_weight="1"
+            android:textSize="20dp" />
 
             <TextView
-                android:layout_width="180dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Task"
                 android:textAlignment="center"
                 android:textColor="@android:color/black"
-                android:textSize="20dp" />
+                android:layout_weight="5"
+            android:textSize="20dp" />
 
             <TextView
-                android:layout_width="100dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Completed"
                 android:textAlignment="center"
                 android:textSize="20dp"
-                android:textColor="@android:color/black" />
+                android:layout_weight="1"
+            android:textColor="@android:color/black"
+            />
         </LinearLayout>
 
     <ListView
@@ -44,4 +48,5 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
     </ListView>
-    </LinearLayout>
+
+</LinearLayout>

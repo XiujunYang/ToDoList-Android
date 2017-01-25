@@ -9,22 +9,21 @@
         app:showAsAction="never" >
         <menu>
             <item
-                android:id="@+id/action_option1"
+                android:id="@+id/hide_completed_task"
                 android:orderInCategory="100"
                 android:title="Hide completed task"
                 android:checkable="true"
                 app:showAsAction="never" >
             </item>
-
+        </menu>
+    </item>
             <item
-                android:id="@+id/action_option2"
+                android:id="@+id/search_task"
                 android:orderInCategory="101"
                 android:title="Search"
                 app:showAsAction="never" >
             </item>
-        </menu>
-    </item>
-    <item
+        <item
         android:id="@+id/action_edit"
         android:orderInCategory="101"
         android:title="@string/action_edit"

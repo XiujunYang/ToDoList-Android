@@ -49,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         dbHandler = new DatabaseHandler();
         dbHandler.start();
-        Log.i(LOG_TAG,"["+Thread.currentThread()+"]onCreate");
         mContext = this.getApplicationContext();
         rcs = mContext.getResources();
         setContentView(R.layout.activity_main);
@@ -78,7 +77,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onStart() {
         super.onStart();
-
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client.connect();
@@ -104,6 +102,26 @@ public class MainActivity extends AppCompatActivity {
         client.disconnect();
     }
 
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.i(LOG_TAG, "requestCode:"+requestCode);
+        int pos = -1;
+        Bundle b;
+        switch (resultCode) {
+            case AppContent.Request_Code_MainActivity:
+                if(resultCode != RESULT_OK) break;
+                if(data==null || data.getExtras() ==null) break;
+                ToDoTask searchTask= data.getExtras().getParcelable(AppContent.search_task);
+                if(searchTask != null) pos = adapter.taskList.indexOf(searchTask);
+                if(pos==-1) break;
+                listView.smoothScrollToPosition(pos);
+                break;
+            default:
+                break;
+        }
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -119,6 +137,7 @@ public class MainActivity extends AppCompatActivity {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
+        Intent intent;
         switch (id) {
             case R.id.action_settings:
             return true;
@@ -137,10 +156,14 @@ public class MainActivity extends AppCompatActivity {
                 editor.commit();
                 return true;
             case R.id.search_task:
+                intent = new Intent(mContext, SearchActivity.class);
+                // show up current displayed list in SearchActivity, and it's depended on R.id.hide_completed_task.
+                intent.putParcelableArrayListExtra(AppContent.displayed_task_list, (ArrayList<ToDoTask>) adapter.taskList);
+                startActivityForResult(intent,AppContent.Request_Code_MainActivity);
                 return true;
             case R.id.action_edit:
             case R.id.action_delete:
-                Intent intent = new Intent(this, SelectedTaskActivity.class);
+                intent = new Intent(this, SelectedTaskActivity.class);
                 if(id == R.id.action_edit) intent.setAction(AppContent.action_function_edit);
                 else if(id ==R.id.action_delete) intent.setAction(AppContent.action_function_delete);
                 intent.putParcelableArrayListExtra(AppContent.displayed_task_list, (ArrayList<ToDoTask>) task_list);
@@ -195,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public class DatabaseHandler extends Thread {
-        final String LOG_TAG = "DatabaseHandler";
+        private final String LOG_TAG = "DatabaseHandler";
         private MyDatabase dbConnection;
 
         @Override

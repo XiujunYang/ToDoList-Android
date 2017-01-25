@@ -1,7 +1,6 @@
 package com.example.jean.todolist;
 
 import android.app.AlertDialog;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -47,7 +46,7 @@ public class SelectedTaskActivity extends AppCompatActivity {
         adapter = new MyBaseAdapter(context, task_list);
         listView.setAdapter(adapter);
         if(called_source.equals(AppContent.action_function_edit)) {
-            this.setTitle("Choose modified task");
+            this.setTitle(getResources().getString(R.string.selected_edittask_label));
             listClickListener = new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -59,7 +58,7 @@ public class SelectedTaskActivity extends AppCompatActivity {
                 }
             };
         } else if(called_source.equals(AppContent.action_function_delete)){
-            this.setTitle("Choose deleted task");
+            this.setTitle(getResources().getString(R.string.selected_deletetask_label));
             listClickListener = new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {

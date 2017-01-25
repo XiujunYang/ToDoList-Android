@@ -7,6 +7,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -17,7 +19,7 @@ import java.util.List;
  * Created by Jean on 2017/1/21.
  */
 
-public class MyBaseAdapter extends BaseAdapter {
+public class MyBaseAdapter extends BaseAdapter implements Filterable {
 
     final String LOG_TAG = "MyBaseAdapter";
     LayoutInflater myInflater;
@@ -25,6 +27,7 @@ public class MyBaseAdapter extends BaseAdapter {
     Context mContext;
     ViewHolder holder = null;
     Boolean hideCompletedTask = false;
+    TaskFilter filter;
 
     public MyBaseAdapter(Context context, List<ToDoTask> tasklist){
         this.mContext = context;
@@ -69,7 +72,6 @@ public class MyBaseAdapter extends BaseAdapter {
     }
 
     public void updateList(List<ToDoTask> taskList){
-        Log.i(LOG_TAG, "Jean_call updateList");
         List<ToDoTask> newList = new ArrayList<ToDoTask>();
         if(hideCompletedTask){
             Iterator it = taskList.iterator();
@@ -81,11 +83,17 @@ public class MyBaseAdapter extends BaseAdapter {
         } else{
             this.taskList = taskList;
         }
-        Log.i(LOG_TAG, "Jean_count:"+this.taskList.size());
+        Log.i(LOG_TAG, "updateList, count:"+this.taskList.size());
         this.notifyDataSetChanged();
     }
     public void setHideCompletedTask(boolean value){ this.hideCompletedTask = value;}
     public boolean isHideCompletedTask(){return hideCompletedTask;}
+
+    @Override
+    public Filter getFilter() {
+        if(filter == null) filter = new TaskFilter();
+        return filter;
+    }
 
     public class ViewHolder{
         TextView mDate;
@@ -96,6 +104,41 @@ public class MyBaseAdapter extends BaseAdapter {
             mDate = (TextView) view.findViewById(R.id.Date);
             mTask = (TextView) view.findViewById(R.id.Task);
             mCompleted = (TextView) view.findViewById(R.id.Completed);
+        }
+    }
+
+    private class TaskFilter extends Filter{
+        //Invoked in a worker thread to filter the data according to the constraint.
+
+        @SuppressWarnings("unchecked")
+        @Override
+        protected void publishResults(CharSequence constraint,
+                                      FilterResults results) {
+            taskList=(ArrayList<ToDoTask>) results.values;
+            notifyDataSetChanged();
+        }
+
+        @Override
+        protected  Filter.FilterResults performFiltering(CharSequence constraint) {
+            FilterResults  results=new FilterResults ();
+            if(constraint!=null && constraint.length()>0){
+                ArrayList<ToDoTask> filterList=new ArrayList<ToDoTask>();
+                for(int i=0;i<taskList.size();i++){
+                    if((taskList.get(i).getTask().toLowerCase())
+                            .contains(constraint.toString().toLowerCase())) {
+                        ToDoTask contacts = new ToDoTask(taskList.get(i).getDate(),
+                                taskList.get(i).getTask(),taskList.get(i).isCompleted());
+                        filterList.add(contacts);
+                    }
+                }
+                results.count=filterList.size();
+                results.values=filterList;
+                taskList = filterList;
+            }else{
+                results.count=taskList.size();
+                results.values=taskList;
+            }
+            return results;
         }
     }
 }

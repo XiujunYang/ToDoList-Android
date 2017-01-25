@@ -47,6 +47,10 @@ public class ToDoTask implements Parcelable {
         return false;
     }
 
+    public String toSting(){
+        return new String("[Date: "+mDate+"; Task: "+mTaskContent+"; isFinish: "+mCompleted+"]");
+    }
+
     @Override
     public int describeContents() {
         return 0;

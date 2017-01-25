@@ -5,6 +5,8 @@ package com.example.jean.todolist;
  */
 
 public class AppContent {
+    //Activity
+    public static final int Request_Code_MainActivity = 1000;
 
     //Intent
     //Database is loaded done.
@@ -15,6 +17,7 @@ public class AppContent {
     public static final String edit_task = "edit_task";
     public static final String edit_task_index = "edit_task_index";
     public static final String displayed_task_list = "displayed_task_list";
+    public static final String search_task = "search_task";
 
     //SharedPreferences
     public static final String SharedPreferences_Name = "TodoListConfig";
