@@ -27,6 +27,9 @@ public class EditTaskActivity extends AppCompatActivity {
         datePicker = (DatePicker) findViewById(R.id.date_picke_edit);
         taskDesc = (EditText) findViewById(R.id.task_edit);
         spinner = (Spinner) findViewById(R.id.status_edit);
+        ArrayAdapter typeAdapter1 = ArrayAdapter.createFromResource(this,
+                R.array.progressList, R.layout.spinner_status_list);
+        spinner.setAdapter(typeAdapter1);
         init();
     }
 
@@ -39,6 +42,7 @@ public class EditTaskActivity extends AppCompatActivity {
     private void init(){
         final Intent intent = getIntent();
         final String action = intent.getAction();
+        final int priority;
         if(null!= action && action.equals(AppContent.action_function_edit)){
             ToDoTask task = intent.getParcelableExtra(AppContent.edit_task);
             if(task != null){
@@ -48,7 +52,11 @@ public class EditTaskActivity extends AppCompatActivity {
                 taskDesc.setSelection(task.getTask().length());//Let cursor put the end.
                 spinner.setSelection(((ArrayAdapter)spinner.getAdapter()).getPosition(
                         String.valueOf(task.isCompleted())));
-            }
+                priority = task.getPriority();
+            } else priority=-1;
+        } else{
+            // AppContent.action_function_create
+            priority = -1;
         }
 
         // if only create, show up following is enough.
@@ -58,11 +66,13 @@ public class EditTaskActivity extends AppCompatActivity {
             public void onClick(View v) {
                 newTask = new ToDoTask(datePicker.getYear()+"-"+(datePicker.getMonth()+1)+"-"+datePicker.getDayOfMonth(),
                         taskDesc.getText().toString(),
-                        spinner.getSelectedItem().toString().equals("true")? true:false);
-                MainActivity.dbHandler.updateTaskToList(newTask, intent.getIntExtra(AppContent.edit_task_index, -1));
+                        spinner.getSelectedItem().toString().equals("true")? true:false, priority);
+                if(MainActivity.getDatabaseHander() != null) {
+                    MainActivity.getDatabaseHander().updateTaskToList(newTask, intent.getIntExtra(AppContent.edit_task_index,-1));
+                }
                 // Create's intent didn't exist AppContent.edit_task_index.
                 Bundle bundle = new Bundle();
-                bundle.putInt(AppContent.edit_task_index, intent.getIntExtra(AppContent.edit_task_index, -1));
+                bundle.putInt(AppContent.edit_task_index, intent.getIntExtra(AppContent.edit_task_index,-1));
                 bundle.putParcelable(AppContent.edit_task, newTask);
                 Intent intent = new Intent();
                 intent.putExtras(bundle);

@@ -42,7 +42,11 @@ public class MyBaseAdapter extends BaseAdapter implements Filterable {
 
     @Override
     public Object getItem(int position) {
-        return taskList.get(position);
+        synchronized (this.taskList) {
+            //Log.i(LOG_TAG, "position=" + position + "; size=" + taskList.size());
+            if(position < taskList.size()) return taskList.get(position);
+            return null;
+        }
     }
 
     @Override
@@ -59,33 +63,43 @@ public class MyBaseAdapter extends BaseAdapter implements Filterable {
         }else{
             holder = (MyBaseAdapter.ViewHolder) convertView.getTag();
         }
-
+        synchronized(this.taskList) {
         ToDoTask task = (ToDoTask) getItem(position);
-        holder.mDate.setText(task.getDate());
-        holder.mTask.setText(task.getTask());
-        holder.mCompleted.setText(String.valueOf(task.isCompleted()));
-        holder.mDate.setClickable(false);
-        holder.mTask.setClickable(false);
-        holder.mCompleted.setClickable(false);
-
-        return convertView;
+            if (task == null) return convertView;
+            holder.mDate.setText(task.getDate());
+            holder.mTask.setText(task.getTask());
+            holder.mCompleted.setText(String.valueOf(task.isCompleted()));
+            holder.mDate.setClickable(false);
+            holder.mTask.setClickable(false);
+            holder.mCompleted.setClickable(false);
+            if (task.getPriority() > 0) convertView.setBackgroundColor(
+                    mContext.getResources().getColor(R.color.importantTaskBgdColor));
+            else convertView.setBackgroundColor(
+                    mContext.getResources().getColor(R.color.default_background));
+            if (MainActivity.searchedTaskPos == position)
+                convertView.setBackgroundResource(R.drawable.highlight_searched_task);
+            return convertView;
+        }
     }
 
     public void updateList(List<ToDoTask> taskList){
+        synchronized (this.taskList) {
         List<ToDoTask> newList = new ArrayList<ToDoTask>();
-        if(hideCompletedTask){
+            if (hideCompletedTask) {
             Iterator it = taskList.iterator();
-            while(it.hasNext()){
+                while (it.hasNext()) {
                 ToDoTask task = (ToDoTask) it.next();
-                if(!task.isCompleted()) newList.add(task);
+                    if (!task.isCompleted()) newList.add(task);
             }
             this.taskList = newList;
-        } else{
+            } else {
             this.taskList = taskList;
-        }
-        Log.i(LOG_TAG, "updateList, count:"+this.taskList.size());
+            }
+            Log.i(LOG_TAG, "updateList, count:" + this.taskList.size());
         this.notifyDataSetChanged();
+        }
     }
+
     public void setHideCompletedTask(boolean value){ this.hideCompletedTask = value;}
     public boolean isHideCompletedTask(){return hideCompletedTask;}
 
@@ -127,7 +141,8 @@ public class MyBaseAdapter extends BaseAdapter implements Filterable {
                     if((taskList.get(i).getTask().toLowerCase())
                             .contains(constraint.toString().toLowerCase())) {
                         ToDoTask contacts = new ToDoTask(taskList.get(i).getDate(),
-                                taskList.get(i).getTask(),taskList.get(i).isCompleted());
+                                taskList.get(i).getTask(),taskList.get(i).isCompleted(),
+                                taskList.get(i).getPriority());
                         filterList.add(contacts);
                     }
                 }

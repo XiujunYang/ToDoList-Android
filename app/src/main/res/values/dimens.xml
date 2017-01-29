@@ -1,6 +1,11 @@
 <resources>
     <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="layout_title_height">30dp</dimen>
+    <dimen name="layout_date_width">90dp</dimen>
+    <dimen name="layout_task_width">180dp</dimen>
+    <dimen name="layout_status_width">60dp</dimen>
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
+    <dimen name="search_edittext_height">40dp</dimen>
 </resources>

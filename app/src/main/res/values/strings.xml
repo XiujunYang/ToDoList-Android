@@ -4,6 +4,7 @@
     <string name="edit_activity">Task Editor</string>
     <string name="selected_deletetask_label">Selecte Deleted Task</string>
     <string name="selected_edittask_label">Selecte Modified Task</string>
+    <string name="prioritize_task_label">Mark/Unmark Task</string>
     <string name="search_task_label">Task Search</string>
 
     <string name="action_settings">Settings</string>

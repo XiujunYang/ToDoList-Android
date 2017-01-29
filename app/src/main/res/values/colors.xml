@@ -7,4 +7,9 @@
     <color name="colorBtnBgd">#FF4081</color>
     <color name="red">#fa4d4a</color>
     <color name="green">#3ac358</color>
+    <color name="searchstrock">#000000</color>
+    <color name="default_background">#EDEDED</color>
+    <color name="searchHighlineBgdColor">#CCE5CC</color>
+    <color name="importantTaskBgdColor">#FEC2B2</color>
+    <color name="circleSearchedTask">#FAED5B</color>>
 </resources>

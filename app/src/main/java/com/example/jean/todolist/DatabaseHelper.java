@@ -12,7 +12,7 @@ import android.util.Log;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
 
-    public static final int DATABASE_VERSION = 1;
+    public static final int DATABASE_VERSION = 2;
 
     private static final String DATABASE_NAME = "Todolist.db";
     private static final String TEXT_TYPE = " TEXT";
@@ -22,12 +22,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_DATE = "datetime";
     public static final String COLUMN_TASK = "task";
     public static final String COLUMN_STATUS = "isFinish";
+    public static final String COLUMN_PRIORITY = "Priority";
 
     private static final String SQL_TABLE_CREATE =
             "CREATE TABLE " + TABLE_NAME + " (" +
                     COLUMN_DATE +" "+ TEXT_TYPE + " NOT NULL"+ COMMA_SEP +
                     COLUMN_TASK +" "+ TEXT_TYPE + " NOT NULL"+ COMMA_SEP +
-                    COLUMN_STATUS + " " + INTEGER_TYPE +" NOT NULL"+" )";
+                    COLUMN_STATUS + " " + INTEGER_TYPE +" NOT NULL"+ COMMA_SEP+
+                    COLUMN_PRIORITY +" "+ INTEGER_TYPE + " )";
 
     private static final String SQL_TABLE_DELETE =
             "DROP TABLE IF EXISTS " + TABLE_NAME;

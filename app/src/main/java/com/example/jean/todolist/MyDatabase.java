@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 
@@ -67,7 +68,8 @@ public class MyDatabase  {
         String[] projection = {
                 DatabaseHelper.COLUMN_DATE,
                 DatabaseHelper.COLUMN_TASK,
-                DatabaseHelper.COLUMN_STATUS
+                DatabaseHelper.COLUMN_STATUS,
+                DatabaseHelper.COLUMN_PRIORITY
         };
         Cursor cursor = db.query(
                 DatabaseHelper.TABLE_NAME,  // The table to query
@@ -84,7 +86,8 @@ public class MyDatabase  {
                 String date = cursor.getString(cursor.getColumnIndexOrThrow(projection[0]));
                 String task = cursor.getString(cursor.getColumnIndexOrThrow(projection[1]));
                 boolean isFinish = cursor.getInt(cursor.getColumnIndexOrThrow(projection[2]))==1?true:false;
-                ToDoTask taskRow = new ToDoTask(date,task,isFinish);
+                int priority = cursor.getInt(cursor.getColumnIndexOrThrow(projection[3]));
+                ToDoTask taskRow = new ToDoTask(date,task,isFinish,priority);
                 tasklist.add(taskRow);
             }while(cursor.moveToNext());
             mTaksList = tasklist;
@@ -103,11 +106,12 @@ public class MyDatabase  {
         values.put(DatabaseHelper.COLUMN_DATE, newTask.getDate());
         values.put(DatabaseHelper.COLUMN_TASK, newTask.getTask());
         values.put(DatabaseHelper.COLUMN_STATUS, newTask.isCompleted());
+        values.put(DatabaseHelper.COLUMN_PRIORITY, newTask.getPriority());
         long count = db.insert(
                 DatabaseHelper.TABLE_NAME,
                 null,
                 values);
-        Log.i(LOGTAG,"insertDataToDB for "+newTask.toString()+" , result:"+count);
+        Log.i(LOGTAG,"["+Thread.currentThread()+"] insertDataToDB for "+newTask.toString()+" , result:"+count);
         if(count == -1) return false;
         mTaksList.add(newTask);
         return true;
@@ -115,10 +119,11 @@ public class MyDatabase  {
 
     synchronized public boolean deleteDataFromDB(int index){
         ToDoTask delTask = mTaksList.get(index);
+        Log.i(LOGTAG, "delete:"+delTask.toString());
         String[] selectionArgs = {delTask.getDate(),delTask.getTask(),
                 delTask.isCompleted()==true?"1":"0"};
         int result = db.delete(DatabaseHelper.TABLE_NAME, selection, selectionArgs);
-        Log.i(LOGTAG,"deleteDataFromDB for index("+index+"), result:"+result);
+        Log.i(LOGTAG,"["+Thread.currentThread()+"] deleteDataFromDB for index("+index+"), result:"+result);
         if(result == 0) return false;
         mTaksList.remove(delTask);
         return true;
@@ -131,6 +136,7 @@ public class MyDatabase  {
         values.put(DatabaseHelper.COLUMN_DATE, modifiedTask.getDate());
         values.put(DatabaseHelper.COLUMN_TASK, modifiedTask.getTask());
         values.put(DatabaseHelper.COLUMN_STATUS, modifiedTask.isCompleted()==true? 1:0);
+        values.put(DatabaseHelper.COLUMN_PRIORITY, modifiedTask.getPriority());
 
         // Which row to update, based on the following data.
         String[] selectionArgs = {targetTask.getDate(),targetTask.getTask(),
@@ -140,9 +146,52 @@ public class MyDatabase  {
                 values,
                 selection,
                 selectionArgs);
-        Log.i(LOGTAG,"updateDataToDB for "+modifiedTask.toString()+" in index("+index+"), result:"+count);
+        Log.i(LOGTAG,"["+Thread.currentThread()+"] updateDataToDB "+targetTask.toString()+" to "+
+                modifiedTask.toString()+" in index("+index+"), result:"+count);
         if(count <= 0) return false;
         mTaksList.set(index, modifiedTask);
         return true;
+    }
+
+    synchronized boolean clearAllPriority(){
+        ContentValues values = new ContentValues();
+        values.put(DatabaseHelper.COLUMN_PRIORITY, 0);
+
+        int count = db.update(
+                DatabaseHelper.TABLE_NAME,
+                values,
+                null,
+                null);
+        Log.i(LOGTAG,"["+Thread.currentThread()+"] clearAllPriority Total update count: "+count);
+        Iterator it = mTaksList.iterator();
+        if(count <= 0) return false;
+        while(it.hasNext()) ((ToDoTask)it.next()).setPriority(0);
+        return true;
+    }
+
+    synchronized void updateWholePriorityToDB(List<ToDoTask> taskList){
+        Iterator it = taskList.iterator();
+        ContentValues values;
+        ToDoTask targetTask;
+        int updatedCount = 0;
+        while(it.hasNext()){
+            targetTask = (ToDoTask) it.next();
+            if(mTaksList.get(mTaksList.indexOf(targetTask)).getPriority() == targetTask.getPriority())
+                continue;
+            values = new ContentValues();
+            values.put(DatabaseHelper.COLUMN_PRIORITY, targetTask.getPriority());
+            if(targetTask==null) continue;
+            String[] selectionArgs = {targetTask.getDate(),targetTask.getTask(),
+                    targetTask.isCompleted()==true?"1":"0"};
+            int count = db.update(
+                    DatabaseHelper.TABLE_NAME,
+                    values,
+                    selection,
+                    selectionArgs);
+            if(count!= 1) Log.d(LOGTAG,"["+Thread.currentThread()+"] updateWholePriorityToDB fail for: "+
+                    targetTask.toString());
+            else updatedCount+=count;
+        }
+        Log.i(LOGTAG, "["+Thread.currentThread()+"] updateWholePriorityToDB update "+updatedCount+" rows successfully.");
     }
 }

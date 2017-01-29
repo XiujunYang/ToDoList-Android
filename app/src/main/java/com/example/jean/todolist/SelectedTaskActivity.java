@@ -1,9 +1,9 @@
 package com.example.jean.todolist;
 
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -17,16 +17,17 @@ import java.util.List;
 public class SelectedTaskActivity extends AppCompatActivity {
     private final String LOG_TAG = "SelectedTaskActivity";
 
-    private Context context;
+    private Resources rcs;
     private ListView listView;
     List<ToDoTask> task_list = new ArrayList<ToDoTask>();
     private MyBaseAdapter adapter;
     AdapterView.OnItemClickListener listClickListener;
+    boolean isDoingPriority = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        context = this.getApplicationContext();
+        rcs = this.getResources();
         setContentView(R.layout.content_main);
         init();
     }
@@ -43,10 +44,25 @@ public class SelectedTaskActivity extends AppCompatActivity {
         if(null == called_source || null ==task_list) return;
 
         listView = (ListView) findViewById(R.id.task_listview);
-        adapter = new MyBaseAdapter(context, task_list);
+        adapter = new MyBaseAdapter(SelectedTaskActivity.this, task_list);
         listView.setAdapter(adapter);
-        if(called_source.equals(AppContent.action_function_edit)) {
-            this.setTitle(getResources().getString(R.string.selected_edittask_label));
+        if(called_source.equals(AppContent.action_function_prioritize)) {
+            this.setTitle(rcs.getString(R.string.prioritize_task_label));
+            isDoingPriority = true;
+            listClickListener = new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    if(adapter.taskList.get(position).getPriority()>0) {
+                        task_list.get(position).setPriority(0);
+                        listView.getChildAt(position).setBackgroundColor(rcs.getColor(R.color.default_background));
+                    }else {
+                        task_list.get(position).setPriority(1);
+                        listView.getChildAt(position).setBackgroundColor(rcs.getColor(R.color.importantTaskBgdColor));
+                    }
+                }
+            };
+        } else if(called_source.equals(AppContent.action_function_edit)) {
+            this.setTitle(rcs.getString(R.string.selected_edittask_label));
             listClickListener = new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -58,7 +74,7 @@ public class SelectedTaskActivity extends AppCompatActivity {
                 }
             };
         } else if(called_source.equals(AppContent.action_function_delete)){
-            this.setTitle(getResources().getString(R.string.selected_deletetask_label));
+            this.setTitle(rcs.getString(R.string.selected_deletetask_label));
             listClickListener = new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -69,9 +85,13 @@ public class SelectedTaskActivity extends AppCompatActivity {
                         alertDialog.setMessage("Are you sure to delete Task:\n\"" + targetedTask.getTask() + "\" ?");
                         alertDialog.setPositiveButton("DELETE", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
-                                MainActivity.dbHandler.updateTaskToList(null, pos);
-                                task_list.remove(targetedTask);
+                                if(MainActivity.getDatabaseHander() != null) {
+                                    MainActivity.getDatabaseHander().updateTaskToList(null, pos);
+                                }
+                                //while(task_list.contains(targetedTask)) task_list.remove(targetedTask);
+                                task_list.remove(pos);
                                 adapter.notifyDataSetChanged();
+                                //startActivity(new Intent(SelectedTaskActivity.this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP ));
                             }
                         });
                         alertDialog.setNegativeButton("CANCEL", new DialogInterface.OnClickListener() {
@@ -91,15 +111,30 @@ public class SelectedTaskActivity extends AppCompatActivity {
         switch (resultCode) {
             case RESULT_OK:
                 Bundle b=data.getExtras();
-                int pos= b.getInt(AppContent.edit_task_index,-1);
+               int pos= b.getInt(AppContent.edit_task_index, -1);
                 ToDoTask task = b.getParcelable(AppContent.edit_task);
-                if(pos!=-1 && task !=null){
-                    task_list.set(pos,task);
+                if(pos!= -1 && task !=null){
+                    task_list.set(pos, task);
                     adapter.notifyDataSetChanged();
                 }
                 break;
             default:
                 break;
         }
+    }
+
+    @Override
+    public void onBackPressed(){
+        if(isDoingPriority){
+            Bundle bundle = new Bundle();
+            bundle.putParcelableArrayList(AppContent.displayed_task_list, (ArrayList<ToDoTask>) task_list);
+            Intent intent = new Intent();
+            intent.putExtras(bundle);
+            setResult(RESULT_OK, intent);
+            isDoingPriority = false;
+            super.onBackPressed();
+            finish();
+        }
+        super.onBackPressed();
     }
 }

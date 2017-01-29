@@ -26,7 +26,8 @@
             android:name=".EditTaskActivity"
             android:label="@string/edit_activity" />
         <activity android:name=".SelectedTaskActivity" />
-        <activity android:name=".SearchActivity"
+        <activity
+            android:name=".SearchActivity"
             android:label="@string/search_task_label" />
         <!--
  ATTENTION: This was auto-generated to add Google Play services to your project for

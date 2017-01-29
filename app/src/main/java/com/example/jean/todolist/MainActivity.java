@@ -1,13 +1,18 @@
 package com.example.jean.todolist;
 
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -23,7 +28,10 @@ import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -39,17 +47,19 @@ public class MainActivity extends AppCompatActivity {
     private ListView listView;
     List<ToDoTask> task_list = new ArrayList<ToDoTask>();
     private MyBaseAdapter adapter;
-    public static DatabaseHandler dbHandler;
+    private static DatabaseHandler dbHandler;
+    LooperThread myLooper = new LooperThread();
     private DBNotifiedReceiver dbNotifiedReceiver = new DBNotifiedReceiver();
     private IntentFilter filter = new IntentFilter(AppContent.QUERY_NOTIFICATION_INTENT);
     SharedPreferences sharedPreferences;
+    static int searchedTaskPos = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        dbHandler = new DatabaseHandler();
-        dbHandler.start();
+        Log.i(LOG_TAG,"onCreate:"+Thread.currentThread());
         mContext = this.getApplicationContext();
+        myLooper.start();
         rcs = mContext.getResources();
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -57,7 +67,8 @@ public class MainActivity extends AppCompatActivity {
 
         listView = (ListView) findViewById(R.id.task_listview);
         adapter = new MyBaseAdapter(mContext, task_list);
-        dbHandler.getTaskListFromDB();
+        Message msg = Message.obtain(dbHandler, RequestCode.GET_DATA);
+        msg.sendToTarget();
         listView.setAdapter(adapter);
         sharedPreferences = getSharedPreferences(AppContent.SharedPreferences_Name , MODE_PRIVATE);
 
@@ -105,18 +116,36 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.i(LOG_TAG, "requestCode:"+requestCode);
+        Log.i(LOG_TAG, "requestCode:"+requestCode+", resultCode:"+resultCode);
+        if(resultCode != RESULT_OK) return;
         int pos = -1;
         Bundle b;
         switch (requestCode) {
-            case AppContent.Request_Code_MainActivity:
-                if(resultCode != RESULT_OK) break;
+            case AppContent.RequestCode_Search_Task:
                 if(data==null || data.getExtras() ==null) break;
                 ToDoTask searchTask= data.getExtras().getParcelable(AppContent.search_task);
                 if(searchTask != null) pos = adapter.taskList.indexOf(searchTask);
-                Log.i(LOG_TAG,"search position result: "+pos);
+                Log.i(LOG_TAG,"Search position result: "+pos);
                 if(pos==-1) break;
+                searchedTaskPos = pos;
                 listView.smoothScrollToPosition(pos);
+                Timer timer = new Timer();
+                timer.schedule(new SearchResultTimer(), 5000);
+                //listView.setBackgroundColor couldn't put here, because adapter.getView keep runing after back this activity.
+                break;
+            case AppContent.RequestCode_Prioritize_Task:
+                if(data==null || data.getExtras() ==null) break;
+                List<ToDoTask> list = data.getParcelableArrayListExtra(AppContent.displayed_task_list);
+                if(list != null) {
+                    Iterator it = list.iterator();
+                    while(it.hasNext()){
+                        ToDoTask changedTask = (ToDoTask) it.next();
+                        task_list.get(task_list.indexOf(changedTask)).setPriority(changedTask.getPriority());
+                    }
+                    Message msg = Message.obtain(dbHandler,RequestCode.UPDATE_PRIORITY,task_list);
+                    msg.sendToTarget();
+                    adapter.notifyDataSetChanged();
+                }
                 break;
             default:
                 break;
@@ -160,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
                 intent = new Intent(mContext, SearchActivity.class);
                 // show up current displayed list in SearchActivity, and it's depended on R.id.hide_completed_task.
                 intent.putParcelableArrayListExtra(AppContent.displayed_task_list, (ArrayList<ToDoTask>) adapter.taskList);
-                startActivityForResult(intent,AppContent.Request_Code_MainActivity);
+                startActivityForResult(intent,AppContent.RequestCode_Search_Task);
                 return true;
             case R.id.action_edit:
             case R.id.action_delete:
@@ -169,6 +198,31 @@ public class MainActivity extends AppCompatActivity {
                 else if(id ==R.id.action_delete) intent.setAction(AppContent.action_function_delete);
                 intent.putParcelableArrayListExtra(AppContent.displayed_task_list, (ArrayList<ToDoTask>) task_list);
                 startActivity(intent);
+                return true;
+            case R.id.unmark_all_task:
+                AlertDialog.Builder alertDialog = new AlertDialog.Builder(MainActivity.this);
+                alertDialog.setTitle("Clear all task mark?");
+                alertDialog.setMessage("This operation will not be retrieved, are you sure?");
+                alertDialog.setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        Iterator it = task_list.iterator();
+                        while(it.hasNext()) {
+                            ((ToDoTask) it.next()).setPriority(0);
+                        }
+                        Message msg = Message.obtain(dbHandler, RequestCode.CLEAR_ALL_PRIORITY);
+                        msg.sendToTarget();
+                        adapter.notifyDataSetChanged();
+                    }
+                });
+                alertDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int which) {}});
+                alertDialog.show();
+                return true;
+            case R.id.mark_important_task:
+                intent = new Intent(mContext, SelectedTaskActivity.class);
+                intent.setAction(AppContent.action_function_prioritize);
+                intent.putParcelableArrayListExtra(AppContent.displayed_task_list, (ArrayList<ToDoTask>) task_list);
+                startActivityForResult(intent,AppContent.RequestCode_Prioritize_Task);
                 return true;
         }
 
@@ -191,52 +245,124 @@ public class MainActivity extends AppCompatActivity {
                 .build();
     }
 
+    public static DatabaseHandler getDatabaseHander(){
+        if(dbHandler != null) return dbHandler;
+        return null;
+    }
+
     private void updateTaskList(ToDoTask needUpdatedTask, int index){
+        Message msg;
         if(needUpdatedTask == null){
             task_list.remove(index);
-            dbHandler.dbConnection.deleteDataFromDB(index);
+            msg = Message.obtain(dbHandler, RequestCode.DELETE_DATA, index,-1);
+            msg.sendToTarget();
         }else if(index != -1 && index < task_list.size()){
             task_list.set(index, needUpdatedTask);
-            dbHandler.dbConnection.updateDataToDB(needUpdatedTask,index);
+            msg = Message.obtain(dbHandler, RequestCode.UPDATE_DATA,index,-1,needUpdatedTask);
+            msg.sendToTarget();
         }else {
             // create a new task
+            if(task_list.contains(needUpdatedTask)){
+                AlertDialog.Builder alertDialog = new AlertDialog.Builder(MainActivity.this);
+                alertDialog.setIcon(R.drawable.warning_icon);
+                alertDialog.setTitle("Task Repeated");
+                alertDialog.setMessage("There's same task content, it is not allow input the same.");
+                alertDialog.setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {}
+                });
+                alertDialog.show();
+                return;
+            }
             task_list.add(needUpdatedTask);
-            dbHandler.dbConnection.insertDataToDB(needUpdatedTask);
+            msg = Message.obtain(dbHandler,RequestCode.INSERT_DATA, needUpdatedTask);
+            msg.sendToTarget();
         }
         adapter.updateList(task_list);
     }
 
+    // Deep copy each element of arrayLIst
+    private List<ToDoTask> cloneList(List<ToDoTask> list) {
+        List<ToDoTask> newlist = new ArrayList<ToDoTask>(list.size());
+        for (ToDoTask item : list) newlist.add(item.clone());
+        return newlist;
+    }
+
 
     public static class DBNotifiedReceiver extends BroadcastReceiver {
-        public DBNotifiedReceiver(){}
+        public DBNotifiedReceiver() {
+        }
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(intent.getAction() == AppContent.QUERY_NOTIFICATION_INTENT){
-                dbHandler.getTaskListFromDB();
+            if (intent.getAction() == AppContent.QUERY_NOTIFICATION_INTENT) {
+                Message msg = Message.obtain(dbHandler,RequestCode.GET_DATA);
+                msg.sendToTarget();
             }
+        }
+            }
+
+    // Make Handler and looper run in the other thread to do database operation..
+    class LooperThread extends Thread {
+        public void run() {
+            Looper.prepare();
+            dbHandler = new DatabaseHandler();
+            Looper.loop();
         }
     }
 
-    public class DatabaseHandler extends Thread {
+    public class DatabaseHandler extends Handler {
         private final String LOG_TAG = "DatabaseHandler";
-        private MyDatabase dbConnection;
+        private MyDatabase dbConnection = MyDatabase.getInstance(mContext);
+
 
         @Override
-        public void run(){
-            dbConnection = MyDatabase.getInstance(mContext);
-        }
-
-        public void getTaskListFromDB(){
-            List<ToDoTask> list = dbConnection.getDataFromDB();
-            if(task_list.size()== 0 && list.size() != 0){
-                task_list.addAll(list);
-                adapter.updateList(task_list);
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case RequestCode.GET_DATA: //getTaskListFromDB
+                    List<ToDoTask> list = dbConnection.getDataFromDB();
+                    if (task_list.size() == 0 && list.size() != 0) {
+                        task_list.addAll(cloneList(list));
+                        adapter.updateList(task_list);
+                    }
+                    break;
+                case RequestCode.INSERT_DATA:
+                    dbConnection.insertDataToDB((ToDoTask) msg.obj);
+                    break;
+                case RequestCode.DELETE_DATA:
+                    dbConnection.deleteDataFromDB(msg.arg1);
+                    break;
+                case RequestCode.UPDATE_DATA:
+                    dbConnection.updateDataToDB((ToDoTask) msg.obj, msg.arg1);
+                    break;
+                case RequestCode.UPDATE_PRIORITY:
+                    dbConnection.updateWholePriorityToDB((List<ToDoTask>) msg.obj);
+                    break;
+                case RequestCode.CLEAR_ALL_PRIORITY:
+                    dbConnection.clearAllPriority();
+                    break;
+                default:
+                    super.handleMessage(msg);
+                    break;
             }
         }
 
-        public void updateTaskToList(ToDoTask needUpdatedTask, int index){
-           updateTaskList(needUpdatedTask,index);
+        // Can not use Message to handleMessage from the other activity, because BaseAdapter.notifyDataSetChanged must call by same UI thread.
+        public void updateTaskToList(ToDoTask needUpdatedTask, int index) {
+            updateTaskList(needUpdatedTask, index);
+            }
+        }
+
+    private class SearchResultTimer extends TimerTask{
+        public void run() {
+            Log.i("SearchResultTimer", "Jean_doit");
+            searchedTaskPos=-1;
+            new Handler(Looper.getMainLooper()).post(new Runnable () {
+                @Override
+                public void run() {
+                    adapter.notifyDataSetChanged();
+                }
+            });
+
         }
     }
 }

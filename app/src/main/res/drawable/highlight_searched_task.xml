@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--<solid android:color="@color/importantTaskBgdColor" /> -->
+    <stroke android:color="@color/circleSearchedTask" android:width="4dp"
+        android:dashWidth="15dp" android:dashGap="5dp"/>
+</shape>
