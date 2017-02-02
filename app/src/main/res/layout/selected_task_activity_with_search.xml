@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/activity_search"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context="com.example.jean.todolist.SearchActivity">
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <include layout="@layout/toolbar_layout"
+        android:layout_width="match_parent"
+        android:layout_height="?android:actionBarSize"/>
 
     <EditText
         android:id="@+id/inputSearch"
@@ -17,5 +17,4 @@
         android:background="@drawable/search_edittext"/>
 
     <include layout="@layout/content_main" />
-
 </LinearLayout>

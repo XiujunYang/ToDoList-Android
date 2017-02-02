@@ -8,6 +8,7 @@
         android:text="@string/default_date"
         android:layout_width="@dimen/layout_date_width"
         android:layout_height="wrap_content"
+        android:gravity="center_vertical"
         android:layout_marginTop="5dp"
         android:layout_marginBottom="5dp"
         android:textSize="18sp"
@@ -19,6 +20,7 @@
         android:id="@+id/Task"
         android:layout_width="@dimen/layout_task_width"
         android:layout_height="wrap_content"
+        android:gravity="center_vertical"
         android:layout_marginTop="5dp"
         android:layout_marginBottom="5dp"
         android:hint="@string/default_task"
@@ -30,7 +32,7 @@
         android:layout_gravity="center_vertical"
         android:scrollbars="vertical" />
 
-    <TextView
+    <!-- <TextView
         android:id="@+id/Completed"
         android:layout_width="@dimen/layout_status_width"
         android:layout_height="wrap_content"
@@ -42,6 +44,6 @@
         android:textColor="@android:color/black"
         android:layout_gravity="center_vertical"
         android:layout_weight="1"
-        android:textSize="18sp" />
+        android:textSize="18sp" />  -->
 
 </LinearLayout>

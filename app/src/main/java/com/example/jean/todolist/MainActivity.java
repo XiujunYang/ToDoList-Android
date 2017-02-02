@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -16,11 +17,17 @@ import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AdapterView;
+import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
@@ -30,8 +37,6 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -52,7 +57,8 @@ public class MainActivity extends AppCompatActivity {
     private DBNotifiedReceiver dbNotifiedReceiver = new DBNotifiedReceiver();
     private IntentFilter filter = new IntentFilter(AppContent.QUERY_NOTIFICATION_INTENT);
     SharedPreferences sharedPreferences;
-    static int searchedTaskPos = -1;
+    EditText searchFor;
+    static boolean searchFunctionOn = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,16 +67,28 @@ public class MainActivity extends AppCompatActivity {
         mContext = this.getApplicationContext();
         myLooper.start();
         rcs = mContext.getResources();
-        setContentView(R.layout.activity_main);
+        sharedPreferences = getSharedPreferences(AppContent.SharedPreferences_Name , MODE_PRIVATE);
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+    }
+
+    private void initialView(){
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar.setTitle("");
+        TextView toolbarTitle = (TextView) findViewById(R.id.toolbar_title);
+        toolbarTitle.setTypeface(toolbarTitle.getTypeface(), Typeface.BOLD);
         setSupportActionBar(toolbar);
 
         listView = (ListView) findViewById(R.id.task_listview);
         adapter = new MyBaseAdapter(mContext, task_list);
-        Message msg = Message.obtain(dbHandler, RequestCode.GET_DATA);
-        msg.sendToTarget();
+        if(task_list.size()==0){
+            Message msg = Message.obtain(dbHandler, RequestCode.GET_DATA);
+            msg.sendToTarget();
+        }
         listView.setAdapter(adapter);
-        sharedPreferences = getSharedPreferences(AppContent.SharedPreferences_Name , MODE_PRIVATE);
+        registerForContextMenu(listView);
 
         FloatingActionButton addTaskBtn = (FloatingActionButton) findViewById(R.id.action_addTask);
         addTaskBtn.setOnClickListener(new View.OnClickListener() {
@@ -79,15 +97,14 @@ public class MainActivity extends AppCompatActivity {
                 intent.setAction(AppContent.action_function_create);
                 startActivity(intent);
             }});
-
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     @Override
     public void onStart() {
         super.onStart();
+        if(searchFunctionOn) setContentView(R.layout.activity_main_with_search);
+        else setContentView(R.layout.activity_main);
+        initialView();
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client.connect();
@@ -121,18 +138,6 @@ public class MainActivity extends AppCompatActivity {
         int pos = -1;
         Bundle b;
         switch (requestCode) {
-            case AppContent.RequestCode_Search_Task:
-                if(data==null || data.getExtras() ==null) break;
-                ToDoTask searchTask= data.getExtras().getParcelable(AppContent.search_task);
-                if(searchTask != null) pos = adapter.taskList.indexOf(searchTask);
-                Log.i(LOG_TAG,"Search position result: "+pos);
-                if(pos==-1) break;
-                searchedTaskPos = pos;
-                listView.smoothScrollToPosition(pos);
-                Timer timer = new Timer();
-                timer.schedule(new SearchResultTimer(), 5000);
-                //listView.setBackgroundColor couldn't put here, because adapter.getView keep runing after back this activity.
-                break;
             case AppContent.RequestCode_Prioritize_Task:
                 if(data==null || data.getExtras() ==null) break;
                 List<ToDoTask> list = data.getParcelableArrayListExtra(AppContent.displayed_task_list);
@@ -153,11 +158,53 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        super.onCreateContextMenu(menu, v, menuInfo);
+        if (v.getId() == R.id.task_listview) {
+            menu.add(Menu.NONE, AppContent.Context_MenuItem_EDIT, Menu.NONE, rcs.getString(R.string.edit_task_label));
+            menu.add(Menu.NONE, AppContent.Context_MenuItem_DEL, Menu.NONE, rcs.getString(R.string.deletetask_label));
+        }
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        final AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+        switch (item.getItemId()) {
+            case AppContent.Context_MenuItem_EDIT:
+                Intent intent = new Intent(this, EditTaskActivity.class);
+                intent.setAction(AppContent.action_function_edit);
+                intent.putExtra(AppContent.edit_task_index, info.position);
+                intent.putExtra(AppContent.edit_task, (ToDoTask) adapter.getItem(info.position));
+                startActivity(intent);
+                return true;
+            case AppContent.Context_MenuItem_DEL:
+                ToDoTask targetedTask = (ToDoTask) adapter.getItem(info.position);
+                if(targetedTask !=null) {
+                    AlertDialog.Builder alertDialog = new AlertDialog.Builder(MainActivity.this);
+                    alertDialog.setMessage("Are you sure to delete Task:\n\"" + targetedTask.getTask() + "\" ?");
+                    alertDialog.setPositiveButton("DELETE", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            if(dbHandler != null) {
+                                dbHandler.updateTaskToList(null, info.position);
+                            }
+                        }
+                    });
+                    alertDialog.setNegativeButton("CANCEL", new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                        }
+                    });
+                    alertDialog.show();
+                }
+                return true;
+            default:
+                return super.onContextItemSelected(item);
+        }
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        menu.findItem(R.id.hide_completed_task).setChecked(
-                sharedPreferences.getBoolean(AppContent.sp_hidetask_flag , false));
         return true;
     }
 
@@ -170,6 +217,8 @@ public class MainActivity extends AppCompatActivity {
         Intent intent;
         switch (id) {
             case R.id.action_settings:
+                item.getSubMenu().findItem(R.id.hide_completed_task).setChecked(
+                        sharedPreferences.getBoolean(AppContent.sp_hidetask_flag , false));
             return true;
             case R.id.hide_completed_task:
                 SharedPreferences.Editor editor = sharedPreferences.edit();
@@ -186,16 +235,40 @@ public class MainActivity extends AppCompatActivity {
                 editor.commit();
                 return true;
             case R.id.search_task:
-                intent = new Intent(mContext, SearchActivity.class);
-                // show up current displayed list in SearchActivity, and it's depended on R.id.hide_completed_task.
-                intent.putParcelableArrayListExtra(AppContent.displayed_task_list, (ArrayList<ToDoTask>) adapter.taskList);
-                startActivityForResult(intent,AppContent.RequestCode_Search_Task);
+                if(!searchFunctionOn) {
+                    setContentView(R.layout.activity_main_with_search);
+                    initialView();
+                    searchFunctionOn = true;
+                    searchFor = (EditText) findViewById(R.id.inputSearch);
+                    if(searchFor !=null) {
+                        searchFor.addTextChangedListener(new TextWatcher() {
+                            @Override
+                            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                            @Override
+                            public void afterTextChanged(Editable arg0) {}
+                            @Override
+                            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                                adapter.updateList(task_list);
+                                adapter.getFilter().filter(s);
+                            }
+                        });
+                    }
+                }else{
+                    setContentView(R.layout.activity_main);
+                    initialView();
+                    searchFunctionOn = false;
+                }
+                adapter.updateList(task_list);
                 return true;
             case R.id.action_edit:
             case R.id.action_delete:
                 intent = new Intent(this, SelectedTaskActivity.class);
                 if(id == R.id.action_edit) intent.setAction(AppContent.action_function_edit);
                 else if(id ==R.id.action_delete) intent.setAction(AppContent.action_function_delete);
+                if(searchFor!=null){
+                    intent.putExtra(AppContent.current_search_string,searchFor.getText().toString());
+                    searchFor.setText("");
+                }
                 intent.putParcelableArrayListExtra(AppContent.displayed_task_list, (ArrayList<ToDoTask>) task_list);
                 startActivity(intent);
                 return true;
@@ -224,9 +297,9 @@ public class MainActivity extends AppCompatActivity {
                 intent.putParcelableArrayListExtra(AppContent.displayed_task_list, (ArrayList<ToDoTask>) task_list);
                 startActivityForResult(intent,AppContent.RequestCode_Prioritize_Task);
                 return true;
+            default:
+                return super.onOptionsItemSelected(item);
         }
-
-        return super.onOptionsItemSelected(item);
     }
 
     /**
@@ -318,9 +391,10 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case RequestCode.GET_DATA: //getTaskListFromDB
+                case RequestCode.GET_DATA:
+                    if(task_list.size() != 0) break;
                     List<ToDoTask> list = dbConnection.getDataFromDB();
-                    if (task_list.size() == 0 && list.size() != 0) {
+                    if (list.size() != 0) {
                         task_list.addAll(cloneList(list));
                         adapter.updateList(task_list);
                     }
@@ -352,17 +426,4 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-    private class SearchResultTimer extends TimerTask{
-        public void run() {
-            Log.i("SearchResultTimer", "Jean_doit");
-            searchedTaskPos=-1;
-            new Handler(Looper.getMainLooper()).post(new Runnable () {
-                @Override
-                public void run() {
-                    adapter.notifyDataSetChanged();
-                }
-            });
-
-        }
-    }
 }

@@ -1,9 +1,5 @@
 package com.example.jean.todolist;
 
-import android.os.Message;
-
-import java.util.Objects;
-
 /**
  * Created by Jean on 2017/1/29.
  */

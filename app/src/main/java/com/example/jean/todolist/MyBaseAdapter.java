@@ -2,6 +2,9 @@ package com.example.jean.todolist;
 
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,6 +17,8 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import static android.content.Context.MODE_PRIVATE;
 
 /**
  * Created by Jean on 2017/1/21.
@@ -33,6 +38,9 @@ public class MyBaseAdapter extends BaseAdapter implements Filterable {
         this.mContext = context;
         this.myInflater = LayoutInflater.from(mContext);
         this.taskList = tasklist;
+        SharedPreferences sharedPreferences =mContext.getSharedPreferences(AppContent.SharedPreferences_Name , MODE_PRIVATE);
+        this.hideCompletedTask = sharedPreferences.getBoolean(AppContent.sp_hidetask_flag , false);
+
     }
 
     @Override
@@ -43,7 +51,6 @@ public class MyBaseAdapter extends BaseAdapter implements Filterable {
     @Override
     public Object getItem(int position) {
         synchronized (this.taskList) {
-            //Log.i(LOG_TAG, "position=" + position + "; size=" + taskList.size());
             if(position < taskList.size()) return taskList.get(position);
             return null;
         }
@@ -68,16 +75,23 @@ public class MyBaseAdapter extends BaseAdapter implements Filterable {
             if (task == null) return convertView;
             holder.mDate.setText(task.getDate());
             holder.mTask.setText(task.getTask());
-            holder.mCompleted.setText(String.valueOf(task.isCompleted()));
             holder.mDate.setClickable(false);
             holder.mTask.setClickable(false);
-            holder.mCompleted.setClickable(false);
+            if(task.isCompleted()) {
+                holder.mDate.setPaintFlags(holder.mDate.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                holder.mTask.setPaintFlags(holder.mDate.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                holder.mDate.setTextColor(Color.GRAY);
+                holder.mTask.setTextColor(Color.GRAY);
+            } else{
+                holder.mDate.setPaintFlags(holder.mDate.getPaintFlags() & 0xFFFFFFEF);
+                holder.mTask.setPaintFlags(holder.mDate.getPaintFlags() & 0xFFFFFFEF);
+                holder.mDate.setTextColor(Color.BLACK);
+                holder.mTask.setTextColor(Color.BLACK);
+            }
             if (task.getPriority() > 0) convertView.setBackgroundColor(
                     mContext.getResources().getColor(R.color.importantTaskBgdColor));
             else convertView.setBackgroundColor(
                     mContext.getResources().getColor(R.color.default_background));
-            if (MainActivity.searchedTaskPos == position)
-                convertView.setBackgroundResource(R.drawable.highlight_searched_task);
             return convertView;
         }
     }
@@ -99,8 +113,7 @@ public class MyBaseAdapter extends BaseAdapter implements Filterable {
         this.notifyDataSetChanged();
         }
     }
-
-    public void setHideCompletedTask(boolean value){ this.hideCompletedTask = value;}
+    public void setHideCompletedTask(boolean value){this.hideCompletedTask = value;}
     public boolean isHideCompletedTask(){return hideCompletedTask;}
 
     @Override
@@ -112,18 +125,15 @@ public class MyBaseAdapter extends BaseAdapter implements Filterable {
     public class ViewHolder{
         TextView mDate;
         TextView mTask;
-        TextView mCompleted;
 
         public ViewHolder(View view) {
             mDate = (TextView) view.findViewById(R.id.Date);
             mTask = (TextView) view.findViewById(R.id.Task);
-            mCompleted = (TextView) view.findViewById(R.id.Completed);
         }
     }
 
     private class TaskFilter extends Filter{
         //Invoked in a worker thread to filter the data according to the constraint.
-
         @SuppressWarnings("unchecked")
         @Override
         protected void publishResults(CharSequence constraint,

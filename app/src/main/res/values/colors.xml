@@ -1,15 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="colorPrimary">#3F51B5</color>
-    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="textColorPrimary">#FFFFFF</color>>
+    <color name="colorPrimaryDark">#000000</color>
     <color name="colorAccent">#FF4081</color>
     <color name="colorBtnTxt">#FF4081</color>
     <color name="colorBtnBgd">#FF4081</color>
-    <color name="red">#fa4d4a</color>
-    <color name="green">#3ac358</color>
+    <color name="DEL_toolbar_color">#BE330C</color>
+    <color name="Edit_toolbar_color">#38A179</color>
+    <color name="Prioritize_toolbar_color">#F67B59</color>
     <color name="searchstrock">#000000</color>
     <color name="default_background">#EDEDED</color>
     <color name="searchHighlineBgdColor">#CCE5CC</color>
     <color name="importantTaskBgdColor">#FEC2B2</color>
-    <color name="circleSearchedTask">#FAED5B</color>>
+    <color name="circleSearchedTask">#FAED5B</color>
+    <color name="navigationBarColor">#87b6e9</color>
 </resources>

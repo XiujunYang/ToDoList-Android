@@ -7,30 +7,30 @@
         android:title="@string/action_settings"
         app:showAsAction="never" >
         <menu>
-            <item android:id="@+id/hide_completed_task"
+            <item android:id="@+id/search_task"
                 android:orderInCategory="100"
+                android:title="Enable/Disable Search"
+                app:showAsAction="never" />
+            <item android:id="@+id/hide_completed_task"
+                android:orderInCategory="200"
                 android:title="Hide completed task"
                 android:checkable="true"
                 app:showAsAction="never" />
-            <item android:id="@+id/mark_important_task"
-                android:orderInCategory="200"
-                android:title="Mark/Unmark task"
-                app:showAsAction="never" />
-            <item android:id="@+id/unmark_all_task"
-                android:orderInCategory="201"
-                android:title="Unmark all task"
-            app:showAsAction="never" />
         </menu>
     </item>
-            <item android:id="@+id/search_task"
-                android:orderInCategory="101"
-                android:title="Search"
-                app:showAsAction="never" />
-        <item android:id="@+id/action_edit"
+    <item android:id="@+id/mark_important_task"
+        android:orderInCategory="100"
+        android:title="Mark/Unmark task"
+        app:showAsAction="never" />
+    <item android:id="@+id/unmark_all_task"
+        android:orderInCategory="101"
+        android:title="Unmark all task"
+        app:showAsAction="never" />
+    <item android:id="@+id/action_edit"
         android:orderInCategory="200"
         android:title="@string/action_edit"
         app:showAsAction="never" />
-        <item android:id="@+id/action_delete"
+    <item android:id="@+id/action_delete"
         android:orderInCategory="300"
         android:title="@string/action_delete"
         app:showAsAction="never" />

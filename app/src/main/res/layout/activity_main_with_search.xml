@@ -4,25 +4,28 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
-    android:orientation="vertical"
-    tools:context="com.example.jean.todolist.MainActivity">
+    android:orientation="vertical">
 
-    <include layout="@layout/toolbar_layout"
+    <include layout="@layout/toolbar_layout" />
+    <EditText
+        android:id="@+id/inputSearch"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="@dimen/search_edittext_height"
+        android:hint="Search for..."
+        android:textSize="20sp"
+        android:textColorHint="@android:color/darker_gray"
+        android:background="@drawable/search_edittext"/>
 
     <FrameLayout
         android:layout_height="match_parent"
         android:layout_width="match_parent">
-
         <include layout="@layout/content_main" />
 
         <android.support.design.widget.FloatingActionButton
         android:id="@+id/action_addTask"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
+        android:layout_gravity="right|bottom"
         android:layout_margin="@dimen/fab_margin"
         app:backgroundTint="@android:color/background_light"
         app:srcCompat="@android:drawable/ic_input_add" />
