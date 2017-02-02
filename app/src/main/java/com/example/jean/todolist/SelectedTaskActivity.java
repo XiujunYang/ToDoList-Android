@@ -86,11 +86,12 @@ public class SelectedTaskActivity extends AppCompatActivity {
             listClickListener = new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                    ToDoTask item = (ToDoTask) adapter.getItem(position);
                     if(adapter.taskList.get(position).getPriority()>0) {
-                        task_list.get(position).setPriority(0);
+                        task_list.get(task_list.indexOf(item)).setPriority(0);
                         view.setBackgroundColor(rcs.getColor(R.color.default_background));
                     }else {
-                        task_list.get(position).setPriority(1);
+                        task_list.get(task_list.indexOf(item)).setPriority(1);
                         view.setBackgroundColor(rcs.getColor(R.color.importantTaskBgdColor));
                     }
                 }

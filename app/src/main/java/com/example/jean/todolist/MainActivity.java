@@ -83,10 +83,8 @@ public class MainActivity extends AppCompatActivity {
 
         listView = (ListView) findViewById(R.id.task_listview);
         adapter = new MyBaseAdapter(mContext, task_list);
-        if(task_list.size()==0){
-            Message msg = Message.obtain(dbHandler, RequestCode.GET_DATA);
+        Message msg = Message.obtain(dbHandler, RequestCode.QUERY_DATABASE);
             msg.sendToTarget();
-        }
         listView.setAdapter(adapter);
         registerForContextMenu(listView);
 
@@ -275,6 +273,7 @@ public class MainActivity extends AppCompatActivity {
             case R.id.unmark_all_task:
                 AlertDialog.Builder alertDialog = new AlertDialog.Builder(MainActivity.this);
                 alertDialog.setTitle("Clear all task mark?");
+                alertDialog.setIcon(R.drawable.warning_icon);
                 alertDialog.setMessage("This operation will not be retrieved, are you sure?");
                 alertDialog.setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
@@ -391,12 +390,21 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
+                case RequestCode.QUERY_DATABASE:
+                    dbConnection.queryDataFromDB();
+                    break;
                 case RequestCode.GET_DATA:
                     if(task_list.size() != 0) break;
                     List<ToDoTask> list = dbConnection.getDataFromDB();
                     if (list.size() != 0) {
                         task_list.addAll(cloneList(list));
-                        adapter.updateList(task_list);
+                        // adapter.notifyDataSetChanged() has to call by Main UI thread.
+                        new Handler(Looper.getMainLooper()).post(new Runnable () {
+                            @Override
+                            public void run() {
+                                adapter.updateList(task_list);
+                            }
+                        });
                     }
                     break;
                 case RequestCode.INSERT_DATA:
