@@ -76,8 +76,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void initialView(){
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        toolbar.setTitle("");
         TextView toolbarTitle = (TextView) findViewById(R.id.toolbar_title);
+        toolbar.setTitle("");
         toolbarTitle.setTypeface(toolbarTitle.getTypeface(), Typeface.BOLD);
         setSupportActionBar(toolbar);
 
@@ -161,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
         if (v.getId() == R.id.task_listview) {
-            menu.add(Menu.NONE, AppContent.Context_MenuItem_EDIT, Menu.NONE, rcs.getString(R.string.edit_task_label));
+            menu.add(Menu.NONE, AppContent.Context_MenuItem_EDIT, Menu.NONE, rcs.getString(R.string.edittask_label));
             menu.add(Menu.NONE, AppContent.Context_MenuItem_DEL, Menu.NONE, rcs.getString(R.string.deletetask_label));
         }
     }

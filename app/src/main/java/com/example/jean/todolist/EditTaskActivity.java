@@ -33,7 +33,7 @@ public class EditTaskActivity extends AppCompatActivity {
         ImageView logo = (ImageView)findViewById(R.id.app_logo);
         logo.setImageResource(0);
         TextView toolbarTitle = (TextView) findViewById(R.id.toolbar_title);
-        toolbarTitle.setText(getApplicationContext().getString(R.string.edit_task_label));
+        toolbarTitle.setText(getApplicationContext().getString(R.string.task_editor_label));
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);

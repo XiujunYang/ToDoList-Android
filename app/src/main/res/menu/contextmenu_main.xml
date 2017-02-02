@@ -8,7 +8,7 @@
         android:gravity="center"
         app:itemTextColor="@color/textColorPrimary"
         app:itemBackground="@color/Edit_toolbar_color"
-        android:title="@string/edit_task_label"
+        android:title="@string/edittask_label"
         />
     <item
         android:orderInCategory="101"

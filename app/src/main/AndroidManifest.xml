@@ -13,8 +13,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme.NoActionBar">
         <activity
-            android:name=".MainActivity"
-            android:label="@string/main_activity_name" >
+            android:name=".MainActivity" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -22,8 +21,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".EditTaskActivity"
-            android:label="@string/edit_activity" />
+            android:name=".EditTaskActivity" />
         <activity android:name=".SelectedTaskActivity" />
         <!--
  ATTENTION: This was auto-generated to add Google Play services to your project for
