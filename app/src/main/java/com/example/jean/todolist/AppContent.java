@@ -8,6 +8,7 @@ public class AppContent {
     //Activity Request_Code from MainActivity
     public static final int RequestCode_Search_Task = 1000;
     public static final int RequestCode_Prioritize_Task = 1001;
+    public static final int RequestCode_Edit_Task = 1002;
 
     //ContextMenuItemID
     public static final int Context_MenuItem_EDIT = 100;

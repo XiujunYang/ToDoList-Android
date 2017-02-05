@@ -20,9 +20,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".EditTaskActivity" />
-        <activity android:name=".SelectedTaskActivity" />
+        <activity android:name=".TaskEditorActivity" />
+        <activity android:name=".ModifyTaskActivity" />
         <!--
  ATTENTION: This was auto-generated to add Google Play services to your project for
      App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information.

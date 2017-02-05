@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -23,62 +22,74 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SelectedTaskActivity extends AppCompatActivity {
-    private final String LOG_TAG = "SelectedTaskActivity";
+/**
+ * This Activity could be used as a selector of editing/deleting/marking task
+ */
+public class ModifyTaskActivity extends AppCompatActivity {
+    private final String LOG_TAG = "ModifyTaskActivity";
 
-    Intent intent;
+    private Intent intent;
     private Resources rcs;
-    private ListView listView;
-    List<ToDoTask> task_list = new ArrayList<ToDoTask>();
+    private List<ToDoTask> task_list = new ArrayList<ToDoTask>();
     private MyBaseAdapter adapter;
-    AdapterView.OnItemClickListener listClickListener;
-    Toolbar toolbar;
-    TextView toolbarTitle;
-    String action;
-    EditText searchFor;
-    SharedPreferences sharedPreferences;
+    private AdapterView.OnItemClickListener listClickListener;
+    private String action;
+    private EditText searchFor;
+    private SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         rcs = this.getResources();
         if(MainActivity.searchFunctionOn) {
-            setContentView(R.layout.selected_task_activity_with_search);
+            setContentView(R.layout.modify_task_activity_with_search);
             searchFor = (EditText) findViewById(R.id.inputSearch);
         }
-        else setContentView(R.layout.selected_task_activity);
+        else setContentView(R.layout.modify_task_activity);
         intent = getIntent();
-        task_list = intent.getParcelableArrayListExtra(AppContent.displayed_task_list);
         action = intent.getAction();
+        task_list = intent.getParcelableArrayListExtra(AppContent.displayed_task_list);
         sharedPreferences = getSharedPreferences(AppContent.SharedPreferences_Name , MODE_PRIVATE);
     }
 
+    @Override
     protected void onResume(){
         super.onResume();
         initView();
     }
 
+    /*@Override
+    protected void onPause(){
+        super.onPause();
+        intent = null;
+        task_list.clear();
+        action = null;
+        searchFor = null;
+        adapter = null;
+    }*/
+
     private void initView(){
-        toolbarTitle = (TextView) findViewById(R.id.toolbar_title);
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        TextView toolbarTitle = (TextView) findViewById(R.id.toolbar_title);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle("");
         ImageView logo = (ImageView)findViewById(R.id.app_logo);
-        logo.setImageResource(0);
+        logo.setImageResource(0);//don't show icon.
         setSupportActionBar(toolbar);
+        // Enable back button on toolbar.
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setDisplayShowHomeEnabled(true);
         }
 
         if(null == action || null ==task_list) return;
-        listView = (ListView) findViewById(R.id.task_listview);
+        ListView listView = (ListView) findViewById(R.id.task_listview);
         listView.setHeaderDividersEnabled(false);
         listView.setFooterDividersEnabled(false);
-        adapter = new MyBaseAdapter(SelectedTaskActivity.this, task_list);
+        adapter = new MyBaseAdapter(ModifyTaskActivity.this, task_list);
         adapter.setHideCompletedTask(sharedPreferences.getBoolean(AppContent.sp_hidetask_flag , false));
         adapter.updateList(task_list);
         listView.setAdapter(adapter);
-        updateSearchEditTextListener();
+        setSearchEditTextListener();
 
         if(action.equals(AppContent.action_function_prioritize)) {
             toolbarTitle.setText(rcs.getString(R.string.prioritize_task_label));
@@ -87,7 +98,7 @@ public class SelectedTaskActivity extends AppCompatActivity {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     ToDoTask item = (ToDoTask) adapter.getItem(position);
-                    if(adapter.taskList.get(position).getPriority()>0) {
+                    if(item.getPriority()>0) {
                         task_list.get(task_list.indexOf(item)).setPriority(0);
                         view.setBackgroundColor(rcs.getColor(R.color.default_background));
                     }else {
@@ -102,11 +113,12 @@ public class SelectedTaskActivity extends AppCompatActivity {
             listClickListener = new AdapterView.OnItemClickListener() {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    Intent intent = new Intent(SelectedTaskActivity.this, EditTaskActivity.class);
+                    ToDoTask item = (ToDoTask) adapter.getItem(position);
+                    Intent intent = new Intent(ModifyTaskActivity.this, TaskEditorActivity.class);
                     intent.setAction(AppContent.action_function_edit);
-                    intent.putExtra(AppContent.edit_task_index, position);
-                    intent.putExtra(AppContent.edit_task, (ToDoTask) adapter.getItem(position));
-                    startActivityForResult(intent,0);
+                    intent.putExtra(AppContent.edit_task_index, task_list.indexOf(item));
+                    intent.putExtra(AppContent.edit_task, item);
+                    startActivityForResult(intent,AppContent.RequestCode_Edit_Task);
                 }
             };
         } else if(action.equals(AppContent.action_function_delete)){
@@ -116,9 +128,10 @@ public class SelectedTaskActivity extends AppCompatActivity {
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                     final ToDoTask targetedTask = (ToDoTask) adapter.getItem(position);
-                    if(targetedTask !=null) {
-                        final int pos = position;
-                        AlertDialog.Builder alertDialog = new AlertDialog.Builder(SelectedTaskActivity.this);
+                    // position is not including hided task' s count, but task_list of here and MainActivity is whole tasks.
+                    final int pos = task_list.indexOf(targetedTask);
+                    if(targetedTask !=null && pos!=-1) {
+                        AlertDialog.Builder alertDialog = new AlertDialog.Builder(ModifyTaskActivity.this);
                         alertDialog.setMessage("Are you sure to delete Task:\n\"" + targetedTask.getTask() + "\" ?");
                         alertDialog.setPositiveButton("DELETE", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
@@ -126,36 +139,31 @@ public class SelectedTaskActivity extends AppCompatActivity {
                                     MainActivity.getDatabaseHander().updateTaskToList(null, pos);
                                 }
                                 task_list.remove(pos);
-                                adapter.notifyDataSetChanged();
+                                adapter.updateList(task_list);
                             }
                         });
                         alertDialog.setNegativeButton("CANCEL", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int which) {
-                            }
-                        });
+                            public void onClick(DialogInterface dialog, int which) {}});
                         alertDialog.show();
-                    }
-                }
-            };
+            }}};
         }
         listView.setOnItemClickListener(listClickListener);
+        // init searchFor as same as MainActivity.
         if(searchFor!=null && intent.getStringExtra(AppContent.current_search_string)!=null)
             searchFor.setText(intent.getStringExtra(AppContent.current_search_string));
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (resultCode) {
-            case RESULT_OK:
+        if(resultCode != RESULT_OK) return;
+        switch (requestCode) {
+            case AppContent.RequestCode_Edit_Task:
                 Bundle b=data.getExtras();
-               int pos= b.getInt(AppContent.edit_task_index, -1);
+                int pos= b.getInt(AppContent.edit_task_index, -1);
                 ToDoTask task = b.getParcelable(AppContent.edit_task);
-                if(pos!= -1 && task !=null){
-                    task_list.set(pos, task);
-                    adapter.notifyDataSetChanged();
-                }
-                break;
-            default:
+                if(pos== -1 || task ==null) break;
+                task_list.set(pos, task);
+                adapter.updateList(task_list);
                 break;
         }
     }
@@ -163,14 +171,8 @@ public class SelectedTaskActivity extends AppCompatActivity {
     @Override
     public void onBackPressed(){
         operationBeforeDead();
-        this.finish();
         super.onBackPressed();
-    }
-
-    @Override
-    public void finish(){
-        action = null;
-        super.finish();
+        finish();
     }
 
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -186,39 +188,32 @@ public class SelectedTaskActivity extends AppCompatActivity {
         switch(id) {
             case R.id.search_task:
                 if(!MainActivity.searchFunctionOn){
-                    setContentView(R.layout.selected_task_activity_with_search);
+                    setContentView(R.layout.modify_task_activity_with_search);
                     initView();
                     MainActivity.searchFunctionOn = true;
                     searchFor = (EditText) findViewById(R.id.inputSearch);
-                    updateSearchEditTextListener();
+                    setSearchEditTextListener();
                 }else{
                     searchFor = null;
-                    setContentView(R.layout.selected_task_activity);
+                    setContentView(R.layout.modify_task_activity);
                     initView();
                     MainActivity.searchFunctionOn = false;
                 }
-                adapter.notifyDataSetChanged();
+                adapter.updateList(task_list);
                 return true;
             case R.id.hide_completed_task:
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                if(item.isChecked()) {
-                    item.setChecked(false);
-                    adapter.setHideCompletedTask(false);
-                    adapter.updateList(task_list);
-                }else{
-                    item.setChecked(true);
-                    adapter.setHideCompletedTask(true);
-                    adapter.updateList(task_list);
-                }
-                editor.putBoolean(AppContent.sp_hidetask_flag ,item.isChecked());
-                editor.commit();
+                if(item.isChecked()) item.setChecked(false);
+                else item.setChecked(true);
+                adapter.setHideCompletedTask(item.isChecked());
+                adapter.updateList(task_list);
+                if(sharedPreferences!=null)
+                    sharedPreferences.edit().putBoolean(AppContent.sp_hidetask_flag ,item.isChecked()).commit();
                 return true;
             case android.R.id.home:
-                operationBeforeDead();
-                this.finish();
+                onBackPressed();
                 return true;
             default:
-            return super.onOptionsItemSelected(item);
+                return super.onOptionsItemSelected(item);
         }
     }
 
@@ -232,7 +227,7 @@ public class SelectedTaskActivity extends AppCompatActivity {
         }
     }
 
-    private void updateSearchEditTextListener(){
+    private void setSearchEditTextListener(){
         if(searchFor !=null) {
             searchFor.addTextChangedListener(new TextWatcher() {
                 @Override
@@ -241,10 +236,8 @@ public class SelectedTaskActivity extends AppCompatActivity {
                 public void afterTextChanged(Editable arg0) {}
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    adapter.updateList(task_list);
                     adapter.getFilter().filter(s);
+                    adapter.updateList(task_list);
                 }
-            });
-        }
-    }
+    });}}
 }

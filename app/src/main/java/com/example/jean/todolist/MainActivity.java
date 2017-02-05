@@ -1,6 +1,7 @@
 package com.example.jean.todolist;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -39,18 +40,13 @@ import java.util.Iterator;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
-    final String LOG_TAG = "MainActivity";
+    private final String LOG_TAG = "MainActivity";
 
     private GoogleApiClient client;
     private Context mContext;
     private Resources rcs;
     private ListView listView;
-    List<ToDoTask> task_list = new ArrayList<ToDoTask>();
+    List<ToDoTask> task_list = new ArrayList<ToDoTask>();//task_list includes whole task, both of uncompleted and completed.
     private MyBaseAdapter adapter;
     private static DatabaseHandler dbHandler;
     LooperThread myLooper = new LooperThread();
@@ -59,15 +55,20 @@ public class MainActivity extends AppCompatActivity {
     SharedPreferences sharedPreferences;
     EditText searchFor;
     static boolean searchFunctionOn = false;
+    private ProgressDialog loadingDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.i(LOG_TAG,"onCreate:"+Thread.currentThread());
         mContext = this.getApplicationContext();
         myLooper.start();
         rcs = mContext.getResources();
         sharedPreferences = getSharedPreferences(AppContent.SharedPreferences_Name , MODE_PRIVATE);
+        loadingDialog = new ProgressDialog(MainActivity.this);
+        Log.i(LOG_TAG, "Jean_create loadingDialog="+loadingDialog.toString());
+        loadingDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        loadingDialog.setMessage(rcs.getString(R.string.database_loading));
+        
 
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -83,15 +84,20 @@ public class MainActivity extends AppCompatActivity {
 
         listView = (ListView) findViewById(R.id.task_listview);
         adapter = new MyBaseAdapter(mContext, task_list);
-        Message msg = Message.obtain(dbHandler, RequestCode.QUERY_DATABASE);
-            msg.sendToTarget();
         listView.setAdapter(adapter);
         registerForContextMenu(listView);
+        //for waiting database query.
+        if(task_list.size()==0) {
+            Log.i(LOG_TAG, "Reload data from database.");
+            loadingDialog.show();
+            Message msg = Message.obtain(dbHandler,RequestCode.GET_DATA);
+            msg.sendToTarget();
+        }
 
         FloatingActionButton addTaskBtn = (FloatingActionButton) findViewById(R.id.action_addTask);
         addTaskBtn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Intent intent = new Intent(mContext, EditTaskActivity.class);
+                Intent intent = new Intent(mContext, TaskEditorActivity.class);
                 intent.setAction(AppContent.action_function_create);
                 startActivity(intent);
             }});
@@ -100,9 +106,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onStart() {
         super.onStart();
-        if(searchFunctionOn) setContentView(R.layout.activity_main_with_search);
-        else setContentView(R.layout.activity_main);
-        initialView();
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client.connect();
@@ -112,6 +115,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onResume(){
         super.onResume();
+        /*Synchronize UI displaying, hide task and search flag could be control in ModifyTaskActivity*/
+        // For search flag
+        if(searchFunctionOn) setContentView(R.layout.activity_main_with_search);
+        else setContentView(R.layout.activity_main);
+        initialView();
+        //For hide flag
         adapter.setHideCompletedTask(sharedPreferences.getBoolean(AppContent.sp_hidetask_flag , false));
         adapter.updateList(task_list);
         registerReceiver(dbNotifiedReceiver, filter);
@@ -133,8 +142,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.i(LOG_TAG, "requestCode:"+requestCode+", resultCode:"+resultCode);
         if(resultCode != RESULT_OK) return;
-        int pos = -1;
-        Bundle b;
         switch (requestCode) {
             case AppContent.RequestCode_Prioritize_Task:
                 if(data==null || data.getExtras() ==null) break;
@@ -147,10 +154,8 @@ public class MainActivity extends AppCompatActivity {
                     }
                     Message msg = Message.obtain(dbHandler,RequestCode.UPDATE_PRIORITY,task_list);
                     msg.sendToTarget();
-                    adapter.notifyDataSetChanged();
+                    // Here doesn't need to adapter.notifyDataSetChanged(), because it does onStart, onResume after here.
                 }
-                break;
-            default:
                 break;
         }
     }
@@ -167,30 +172,27 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onContextItemSelected(MenuItem item) {
         final AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+        ToDoTask targetedTask = (ToDoTask) adapter.getItem(info.position);
+        final int pos = task_list.indexOf(targetedTask);//info.position is current view's position, it will ignore hided task.
         switch (item.getItemId()) {
             case AppContent.Context_MenuItem_EDIT:
-                Intent intent = new Intent(this, EditTaskActivity.class);
+                Intent intent = new Intent(this, TaskEditorActivity.class);
                 intent.setAction(AppContent.action_function_edit);
-                intent.putExtra(AppContent.edit_task_index, info.position);
-                intent.putExtra(AppContent.edit_task, (ToDoTask) adapter.getItem(info.position));
+                intent.putExtra(AppContent.edit_task_index, pos);
+                intent.putExtra(AppContent.edit_task, (ToDoTask) targetedTask);
                 startActivity(intent);
                 return true;
             case AppContent.Context_MenuItem_DEL:
-                ToDoTask targetedTask = (ToDoTask) adapter.getItem(info.position);
-                if(targetedTask !=null) {
+                if(targetedTask !=null && pos!=-1) {
                     AlertDialog.Builder alertDialog = new AlertDialog.Builder(MainActivity.this);
                     alertDialog.setMessage("Are you sure to delete Task:\n\"" + targetedTask.getTask() + "\" ?");
                     alertDialog.setPositiveButton("DELETE", new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int which) {
                             if(dbHandler != null) {
-                                dbHandler.updateTaskToList(null, info.position);
-                            }
-                        }
-                    });
+                                dbHandler.updateTaskToList(null, pos);
+                    }}});
                     alertDialog.setNegativeButton("CANCEL", new DialogInterface.OnClickListener() {
-                        public void onClick(DialogInterface dialog, int which) {
-                        }
-                    });
+                        public void onClick(DialogInterface dialog, int which) {}});
                     alertDialog.show();
                 }
                 return true;
@@ -215,22 +217,17 @@ public class MainActivity extends AppCompatActivity {
         Intent intent;
         switch (id) {
             case R.id.action_settings:
+                // Init check box's value, this value might change in ModifyTaskActivity.
                 item.getSubMenu().findItem(R.id.hide_completed_task).setChecked(
                         sharedPreferences.getBoolean(AppContent.sp_hidetask_flag , false));
             return true;
             case R.id.hide_completed_task:
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                if(item.isChecked()) {
-                    item.setChecked(false);
-                    adapter.setHideCompletedTask(false);
+                if(item.isChecked()) item.setChecked(false);
+                else item.setChecked(true);
+                adapter.setHideCompletedTask(item.isChecked());
                     adapter.updateList(task_list);
-                }else{
-                    item.setChecked(true);
-                    adapter.setHideCompletedTask(true);
-                    adapter.updateList(task_list);
-                }
-                editor.putBoolean(AppContent.sp_hidetask_flag ,item.isChecked());
-                editor.commit();
+                if(sharedPreferences!=null)
+                    sharedPreferences.edit().putBoolean(AppContent.sp_hidetask_flag ,item.isChecked()).commit();
                 return true;
             case R.id.search_task:
                 if(!searchFunctionOn) {
@@ -246,8 +243,8 @@ public class MainActivity extends AppCompatActivity {
                             public void afterTextChanged(Editable arg0) {}
                             @Override
                             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                                adapter.updateList(task_list);
                                 adapter.getFilter().filter(s);
+                                adapter.updateList(task_list);
                             }
                         });
                     }
@@ -255,12 +252,13 @@ public class MainActivity extends AppCompatActivity {
                     setContentView(R.layout.activity_main);
                     initialView();
                     searchFunctionOn = false;
+                    searchFor =null;
                 }
                 adapter.updateList(task_list);
                 return true;
             case R.id.action_edit:
             case R.id.action_delete:
-                intent = new Intent(this, SelectedTaskActivity.class);
+                intent = new Intent(mContext, ModifyTaskActivity.class);
                 if(id == R.id.action_edit) intent.setAction(AppContent.action_function_edit);
                 else if(id ==R.id.action_delete) intent.setAction(AppContent.action_function_delete);
                 if(searchFor!=null){
@@ -283,7 +281,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                         Message msg = Message.obtain(dbHandler, RequestCode.CLEAR_ALL_PRIORITY);
                         msg.sendToTarget();
-                        adapter.notifyDataSetChanged();
+                        adapter.notifyDataSetChanged();//it doesn't exist any task's change, such as date, content, status.
                     }
                 });
                 alertDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -291,7 +289,7 @@ public class MainActivity extends AppCompatActivity {
                 alertDialog.show();
                 return true;
             case R.id.mark_important_task:
-                intent = new Intent(mContext, SelectedTaskActivity.class);
+                intent = new Intent(mContext, ModifyTaskActivity.class);
                 intent.setAction(AppContent.action_function_prioritize);
                 intent.putParcelableArrayListExtra(AppContent.displayed_task_list, (ArrayList<ToDoTask>) task_list);
                 startActivityForResult(intent,AppContent.RequestCode_Prioritize_Task);
@@ -325,23 +323,24 @@ public class MainActivity extends AppCompatActivity {
     private void updateTaskList(ToDoTask needUpdatedTask, int index){
         Message msg;
         if(needUpdatedTask == null){
+            //Deletion
             task_list.remove(index);
             msg = Message.obtain(dbHandler, RequestCode.DELETE_DATA, index,-1);
             msg.sendToTarget();
         }else if(index != -1 && index < task_list.size()){
+            // Modification
             task_list.set(index, needUpdatedTask);
             msg = Message.obtain(dbHandler, RequestCode.UPDATE_DATA,index,-1,needUpdatedTask);
             msg.sendToTarget();
         }else {
-            // create a new task
+            // Create a new task
             if(task_list.contains(needUpdatedTask)){
                 AlertDialog.Builder alertDialog = new AlertDialog.Builder(MainActivity.this);
                 alertDialog.setIcon(R.drawable.warning_icon);
                 alertDialog.setTitle("Task Repeated");
                 alertDialog.setMessage("There's same task content, it is not allow input the same.");
                 alertDialog.setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int which) {}
-                });
+                    public void onClick(DialogInterface dialog, int which) {}});
                 alertDialog.show();
                 return;
             }
@@ -361,11 +360,13 @@ public class MainActivity extends AppCompatActivity {
 
 
     public static class DBNotifiedReceiver extends BroadcastReceiver {
+        private String LOG_TAG = "DBNotifiedReceiver";
         public DBNotifiedReceiver() {
         }
 
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.i(LOG_TAG, "onReceive: "+intent.getAction());
             if (intent.getAction() == AppContent.QUERY_NOTIFICATION_INTENT) {
                 Message msg = Message.obtain(dbHandler,RequestCode.GET_DATA);
                 msg.sendToTarget();
@@ -386,7 +387,6 @@ public class MainActivity extends AppCompatActivity {
         private final String LOG_TAG = "DatabaseHandler";
         private MyDatabase dbConnection = MyDatabase.getInstance(mContext);
 
-
         @Override
         public void handleMessage(Message msg) {
             switch (msg.what) {
@@ -396,7 +396,9 @@ public class MainActivity extends AppCompatActivity {
                 case RequestCode.GET_DATA:
                     if(task_list.size() != 0) break;
                     List<ToDoTask> list = dbConnection.getDataFromDB();
-                    if (list.size() != 0) {
+                    if (list==null || list.size() == 0) break;
+                    if(loadingDialog.isShowing()) loadingDialog.dismiss();
+                    //Make ArrayList's element won't be affected by the other between MainActivity and MyDatabase.
                         task_list.addAll(cloneList(list));
                         // adapter.notifyDataSetChanged() has to call by Main UI thread.
                         new Handler(Looper.getMainLooper()).post(new Runnable () {
@@ -405,7 +407,6 @@ public class MainActivity extends AppCompatActivity {
                                 adapter.updateList(task_list);
                             }
                         });
-                    }
                     break;
                 case RequestCode.INSERT_DATA:
                     dbConnection.insertDataToDB((ToDoTask) msg.obj);

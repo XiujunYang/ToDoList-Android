@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    tools:context="com.example.jean.todolist.EditTaskActivity">
+    tools:context="com.example.jean.todolist.TaskEditorActivity">
 
     <LinearLayout
         android:layout_width="match_parent"

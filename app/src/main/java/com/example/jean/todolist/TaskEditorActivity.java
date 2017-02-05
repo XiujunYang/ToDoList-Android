@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -16,8 +15,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 
-public class EditTaskActivity extends AppCompatActivity {
-    private final String LOG_TAG = "EditTaskActivity";
+public class TaskEditorActivity extends AppCompatActivity {
+    private final String LOG_TAG = "TaskEditorActivity";
 
     private DatePicker datePicker;
     private EditText taskDesc;
@@ -27,7 +26,7 @@ public class EditTaskActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_edit_task);
+        setContentView(R.layout.task_editor_activity);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle("");
         ImageView logo = (ImageView)findViewById(R.id.app_logo);

@@ -26,21 +26,20 @@ import static android.content.Context.MODE_PRIVATE;
 
 public class MyBaseAdapter extends BaseAdapter implements Filterable {
 
-    final String LOG_TAG = "MyBaseAdapter";
-    LayoutInflater myInflater;
+    private final String LOG_TAG = "MyBaseAdapter";
+    private LayoutInflater myInflater;
     List<ToDoTask> taskList;
-    Context mContext;
-    ViewHolder holder = null;
-    Boolean hideCompletedTask = false;
-    TaskFilter filter;
+    private Context mContext;
+    private ViewHolder holder = null;
+    private Boolean hideCompletedTask = false;
+    private TaskFilter filter;
 
     public MyBaseAdapter(Context context, List<ToDoTask> tasklist){
         this.mContext = context;
         this.myInflater = LayoutInflater.from(mContext);
         this.taskList = tasklist;
-        SharedPreferences sharedPreferences =mContext.getSharedPreferences(AppContent.SharedPreferences_Name , MODE_PRIVATE);
-        this.hideCompletedTask = sharedPreferences.getBoolean(AppContent.sp_hidetask_flag , false);
-
+        this.hideCompletedTask =mContext.getSharedPreferences(AppContent.SharedPreferences_Name,MODE_PRIVATE)
+                .getBoolean(AppContent.sp_hidetask_flag , false);;
     }
 
     @Override
@@ -83,6 +82,7 @@ public class MyBaseAdapter extends BaseAdapter implements Filterable {
                 holder.mDate.setTextColor(Color.GRAY);
                 holder.mTask.setTextColor(Color.GRAY);
             } else{
+                // Reset to default style for holder, because holder will be re-use in the other row.
                 holder.mDate.setPaintFlags(holder.mDate.getPaintFlags() & 0xFFFFFFEF);
                 holder.mTask.setPaintFlags(holder.mDate.getPaintFlags() & 0xFFFFFFEF);
                 holder.mDate.setTextColor(Color.BLACK);
@@ -95,7 +95,13 @@ public class MyBaseAdapter extends BaseAdapter implements Filterable {
             return convertView;
         }
     }
+    public void setHideCompletedTask(boolean value){this.hideCompletedTask = value;}
+    public boolean isHideCompletedTask(){return hideCompletedTask;}
 
+    /**
+     *  Used to filter completed task while user turn on function hiding finished task.
+     * @param taskList
+     */
     public void updateList(List<ToDoTask> taskList){
         synchronized (this.taskList) {
         List<ToDoTask> newList = new ArrayList<ToDoTask>();
@@ -106,15 +112,11 @@ public class MyBaseAdapter extends BaseAdapter implements Filterable {
                     if (!task.isCompleted()) newList.add(task);
             }
             this.taskList = newList;
-            } else {
-            this.taskList = taskList;
-            }
-            Log.i(LOG_TAG, "updateList, count:" + this.taskList.size());
+            } else this.taskList = taskList;
+            Log.i(LOG_TAG, "["+Thread.currentThread()+"] updateList, count:" + this.taskList.size());
         this.notifyDataSetChanged();
         }
     }
-    public void setHideCompletedTask(boolean value){this.hideCompletedTask = value;}
-    public boolean isHideCompletedTask(){return hideCompletedTask;}
 
     @Override
     public Filter getFilter() {
@@ -133,11 +135,9 @@ public class MyBaseAdapter extends BaseAdapter implements Filterable {
     }
 
     private class TaskFilter extends Filter{
-        //Invoked in a worker thread to filter the data according to the constraint.
         @SuppressWarnings("unchecked")
         @Override
-        protected void publishResults(CharSequence constraint,
-                                      FilterResults results) {
+        protected void publishResults(CharSequence constraint, FilterResults results) {
             taskList=(ArrayList<ToDoTask>) results.values;
             notifyDataSetChanged();
         }
@@ -150,10 +150,10 @@ public class MyBaseAdapter extends BaseAdapter implements Filterable {
                 for(int i=0;i<taskList.size();i++){
                     if((taskList.get(i).getTask().toLowerCase())
                             .contains(constraint.toString().toLowerCase())) {
-                        ToDoTask contacts = new ToDoTask(taskList.get(i).getDate(),
+                        ToDoTask item = new ToDoTask(taskList.get(i).getDate(),
                                 taskList.get(i).getTask(),taskList.get(i).isCompleted(),
                                 taskList.get(i).getPriority());
-                        filterList.add(contacts);
+                        filterList.add(item);
                     }
                 }
                 results.count=filterList.size();

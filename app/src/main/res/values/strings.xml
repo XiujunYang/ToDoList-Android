@@ -18,4 +18,5 @@
         <item>true</item>
     </string-array>
 
+    <string name="database_loading">Data is loading...</string>
 </resources>
